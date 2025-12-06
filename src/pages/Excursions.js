@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
-import "../styles/excursions.css";
 import cardImg from '../components/images/card.jpg';
+import { DateRange } from "react-date-range";
+import { useLocation } from "react-router-dom";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
+import { ru } from "date-fns/locale";
+import "../styles/excursions.css";
 
 const API_BASE = "http://localhost/globalgid/public/backend/api.php";
 
@@ -120,23 +125,106 @@ const ExcursionCard = ({ excursion }) => {
 };
 
 // ==================== КОМПОНЕНТ БАННЕРА ====================
-const Banner = () => {
+const Banner = ({ searchQuery, onSearchChange, dateRange, setDateRange, onSearchSubmit }) => {
+  const [openCalendar, setOpenCalendar] = useState(false);
+  
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSearchSubmit();
+  };
+
+  const formatRange = () => {
+    const start = dateRange[0].startDate;
+    const end = dateRange[0].endDate;
+    
+
+    if (!start || !end) return "Когда? (необязательно)";
+
+    return `${start.toLocaleDateString()} — ${end.toLocaleDateString()}`;
+  };
+
   return (
-    <section className="banner banner--excursions">
+  <section className="banner banner--excursions">
       <h1>Поиск экскурсий и приключений</h1>
       <p>Найдите уникальные туры от местных гидов по всему миру</p>
-      <form className="search-form">
+
+      <form className="search-form" onSubmit={handleSubmit}>
+        {/* Поле поиска локации */}
         <div className="search-bar-banner">
-          <input type="text" placeholder="Куда вы хотите поехать?" />
+                            <svg
+                  className="search-icons"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.7321 10.3182H10.9907L10.7279 10.065C11.8541 8.7518 12.436 6.96032 12.1169 5.05624C11.6758 2.44869 9.4984 0.366386 6.87055 0.0474864C2.90061 -0.440264 -0.440517 2.89891 0.0475131 6.86652C0.366613 9.4928 2.45012 11.6689 5.05921 12.1098C6.9644 12.4287 8.757 11.8471 10.0709 10.7216L10.3243 10.9842V11.7252L14.313 15.7116C14.6978 16.0961 15.3266 16.0961 15.7114 15.7116C16.0962 15.327 16.0962 14.6986 15.7114 14.314L11.7321 10.3182ZM6.10096 10.3182C3.76405 10.3182 1.87763 8.4329 1.87763 6.09739C1.87763 3.76184 3.76405 1.87653 6.10096 1.87653C8.4379 1.87653 10.3243 3.76184 10.3243 6.09739C10.3243 8.4329 8.4379 10.3182 6.10096 10.3182Z" fill="#202020"/>
+            </svg>
+          <input
+            type="text"
+            placeholder="Куда вы хотите поехать?"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+            {searchQuery && (
+    <button
+      type="button"
+      className="clear-date-btn"
+      onClick={() => onSearchChange("")}
+    >
+      ×
+    </button>
+  )}
         </div>
-        <input 
-          type="text" 
-          className="date-input" 
-          placeholder="Когда? (необязательно)" 
-        />
+
+        {/* Поле выбора даты */}
+        <div className="date-input-wrapper">
+<input
+  type="text"
+  className={`date-input ${!dateRange[0].startDate ? "placeholder-style" : ""}`}
+  readOnly
+  value={formatRange()}
+  onClick={() => setOpenCalendar(!openCalendar)}
+/>
+
+  {/* Кнопка очистки дат */}
+  {dateRange[0].startDate && (
+    <button
+      type="button"
+      className="clear-date-btn"
+      onClick={(e) => {
+        e.stopPropagation(); // чтобы не открывался календарь
+        setDateRange([
+          {
+            startDate: null,
+            endDate: null,
+            key: "selection"
+          }
+        ]);
+      }}
+    >
+      ×
+    </button>
+  )}
+
+          {openCalendar && (
+            <div className="calendar-popup">
+              <DateRange
+                locale={ru}
+                editableDateInputs={true}
+                onChange={(item) => setDateRange([item.selection])}
+                moveRangeOnFirstSelection={false}
+                ranges={dateRange}
+              />
+            </div>
+          )}
+        </div>
+
         <button type="submit">Найти</button>
       </form>
     </section>
+
   );
 };
 
@@ -148,6 +236,7 @@ const FiltersPanel = ({
   activities,
   languages,
   priceRange,
+  durationRange, //
   selectedTypes,
   selectedTransport,
   selectedSpecializations,
@@ -173,7 +262,10 @@ const FiltersPanel = ({
   onToggleActivityList,
   onToggleLanguageList,
   onApplyFilters,
-  changePrice
+  changePrice,
+  changeDuration, //
+  withChildren,
+  setWithChildren //дети
 }) => {
 
   return (
@@ -191,11 +283,26 @@ const FiltersPanel = ({
       />
 
       {/* Длительность */}
-      <label>Длительность</label>
-      <div className="inline-group">
-        <InlineField label="От (часов)" placeholder="1" min="1" max="24" />
-        <InlineField label="До (часов)" placeholder="24" min="1" max="24" />
-      </div>
+<label>Длительность</label>
+<div className="inline-group">
+  <InlineField
+    label="От (часов)"
+    typeV="min_duration"
+    placeholder="1"
+    min="1"
+    max="24"
+    fun={changeDuration}
+  />
+  <InlineField
+    label="До (часов)"
+    typeV="max_duration"
+    placeholder="24"
+    min="1"
+    max="24"
+    fun={changeDuration}
+  />
+</div>
+
 
       {/* Цена */}
       <label>Цена</label>
@@ -241,13 +348,18 @@ const FiltersPanel = ({
       />
 
       {/* Можно с детьми */}
-      <div className="toggle-row">
-        <span>Можно с детьми</span>
-        <label className="switch">
-          <input type="checkbox" />
-          <span className="slider"></span>
-        </label>
-      </div>
+<div className="toggle-row">
+  <span>Можно с детьми</span>
+  <label className="switch">
+    <input
+      type="checkbox"
+      checked={withChildren}
+      onChange={(e) => setWithChildren(e.target.checked)}
+    />
+    <span className="slider"></span>
+  </label>
+</div>
+
 
       {/* Активность */}
       <CheckboxFilterGroup
@@ -316,6 +428,7 @@ const ExcursionsPage = () => {
   const [showSpecializationsList, setShowSpecializationsList] = useState(false);
   const [showActivityList, setShowActivityList] = useState(false);
   const [showLanguageList, setShowLanguageList] = useState(false);
+  const [withChildren, setWithChildren] = useState(false);//дети
 
   // Выбранные значения фильтров
   const [selectedTypes, setSelectedTypes] = useState([]);
@@ -326,12 +439,73 @@ const ExcursionsPage = () => {
 
   // Данные для фильтров
   const [excursionCards, setExcursionCards] = useState([1,2,3,4]);
-const [priceRange, setPriceRange] = useState({ min_price: null, max_price: null });//
+const [priceRange, setPriceRange] = useState({ min_price: null, max_price: null });
+const [durationRange, setDurationRange] = useState({ min_duration: null,max_duration: null });//
   const [languages, setLanguages] = useState([]);
   const [specializations, setSpecializations] = useState([]);
   const [excursionTypes, setExcursionTypes] = useState([]);
   const [transportTypes, setTransportTypes] = useState([]);
   const [activities, setActivities] = useState([]);
+
+  //поисковик
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchDate, setSearchDate] = useState("");// мб не надо
+const [dateRange, setDateRange] = useState([
+  {
+    startDate: null,
+    endDate: null,
+    key: 'selection'
+  }
+]);
+
+const parseLocalDate = (str) => {
+  if (!str) return null;
+  const [year, month, day] = str.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+  // ✅ импортируем параметры из URL
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+
+  const initialLocation = params.get("location") || "";
+  const initialStart = params.get("start") || null;
+  const initialEnd = params.get("end") || null;
+
+    //читаем параме и применяем фильтры
+useEffect(() => {
+  if (initialLocation) setSearchQuery(initialLocation);
+
+  if (initialStart || initialEnd) {
+    setDateRange([
+      {
+        startDate: initialStart ? parseLocalDate(initialStart) : null,
+        endDate: initialEnd ? parseLocalDate(initialEnd) : null,
+        key: "selection"
+      }
+    ]); 
+  }
+}, []); 
+
+useEffect(() => {
+  const hasLocation = searchQuery.trim() !== "";
+  const hasStart = !!dateRange[0].startDate;
+  const hasEnd = !!dateRange[0].endDate;
+
+  if (hasLocation || hasStart || hasEnd) {
+    applyFilters();
+  }
+}, [searchQuery, dateRange]);
+
+  console.log("URL params:", { initialLocation, initialStart, initialEnd });
+
+
+    const formatLocalDate = (d) =>
+        d
+            ? new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+                  .toISOString()
+                  .split("T")[0]
+            : null;
 
   // Вспомогательная функция для переключения выбора
   const toggleSelection = (setter, selected, value) => {
@@ -376,8 +550,11 @@ const [priceRange, setPriceRange] = useState({ min_price: null, max_price: null 
   
   }, [sort]);
 
-  // Применение фильтров
+// Применение фильтров
 const applyFilters = async () => {
+  const start = dateRange[0].startDate;
+  const end = dateRange[0].endDate;
+
   const filters = {
     types: selectedTypes,
     transport: selectedTransport,
@@ -385,17 +562,31 @@ const applyFilters = async () => {
     activities: selectedActivities,
     languages: selectedLanguages,
     minPrice: priceRange.min_price,
-    maxPrice: priceRange.max_price,   
+    maxPrice: priceRange.max_price,
+    minDuration: durationRange.min_duration,
+    maxDuration: durationRange.max_duration,
+    withChildren: withChildren ? 1 : null,
+
+    // ✅ Поиск по локации
+    locationQuery: searchQuery.trim() !== "" ? searchQuery.trim() : null,
+
+    // ❌ УДАЛЕНО: dateQuery (его больше нет)
+    // dateQuery: searchDate.trim() !== "" ? searchDate.trim() : null,
+
+    // ✅ Даты из календаря
+    dateStart: formatLocalDate(start),
+    dateEnd: formatLocalDate(end),
   };
-  console.log(filters.specializations)
+
   try {
     const res = await fetch(`${API_BASE}?method=getExcursionsFiltered`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(filters),
     });
+
     const result = await res.json();
-    
+
     if (result.success) {
       setExcursionCards(result.data);
       console.log("Успешно загружено:", result.total, "экскурсий");
@@ -403,11 +594,12 @@ const applyFilters = async () => {
     } else {
       console.error("Ошибка сервера:", result.error);
     }
-    
+
   } catch (err) {
     console.error("Ошибка применения фильтров:", err);
   }
 };
+
 function changePrice(type,value){
   setPriceRange(prev => ({
   ...prev, // Копируем все предыдущие значения
@@ -415,13 +607,28 @@ function changePrice(type,value){
 }));
 
 }
+//по аналогии для длительности
+function changeDuration(type, value) {
+  setDurationRange(prev => ({
+    ...prev,
+    [type]: value
+  }));
+}
+
 
 useEffect(()=>{
   console.log(priceRange.max_price,'asfgdsdhjf3465678')
 },[priceRange.max_price])
   return (
     <div className="excursions-page">
-      <Banner />
+<Banner
+  searchQuery={searchQuery}
+  onSearchChange={setSearchQuery}
+  dateRange={dateRange}
+  setDateRange={setDateRange}
+  onSearchSubmit={applyFilters}
+/>
+
       
       <section className="excursions-content">
         <FiltersPanel
@@ -431,6 +638,8 @@ useEffect(()=>{
           activities={activities}
           languages={languages}
           priceRange={priceRange}
+          durationRange={durationRange} //
+          withChildren={withChildren} //дети
           selectedTypes={selectedTypes}
           selectedTransport={selectedTransport}
           selectedSpecializations={selectedSpecializations}
@@ -453,6 +662,8 @@ useEffect(()=>{
           onToggleLanguageList={() => setShowLanguageList(!showLanguageList)}
           onApplyFilters={applyFilters}
           changePrice={changePrice}
+          changeDuration={changeDuration} //
+          setWithChildren={setWithChildren} // дети
         />
         
         <ExcursionList

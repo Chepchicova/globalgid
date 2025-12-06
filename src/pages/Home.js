@@ -1,3 +1,9 @@
+import React, { useState } from "react";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import { useNavigate } from "react-router-dom";
+import { DateRange } from "react-date-range";
+import { ru } from "date-fns/locale";
 import "../styles/home.css";
 import spbImg from '../components/images/saint-petersburg.png';
 import kalinImg from '../components/images/kaliningrad.jpg';
@@ -11,9 +17,6 @@ import yerevanImg from '../components/images/yerevan.webp';
 import romeImg from '../components/images/rome.jpg';
 import guideFieldImg from '../components/images/guide_field.jpg';
 import viewImg from '../components/images/view.jpg';
-import React, { useState } from "react";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
 
 export default function Home() {
 
@@ -72,13 +75,65 @@ const handleSubmit = async (e) => {
   }
 };
 
+  const navigate = useNavigate();
+  // ✅ состояния поисковика
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openCalendar, setOpenCalendar] = useState(false);
+
+  const [dateRange, setDateRange] = useState([
+    {
+      startDate: null,
+      endDate: null,
+      key: "selection"
+    }
+  ]);
+
+//для поисковика 
+  const handleSearch = () => {
+const formatDate = (d) => {
+  if (!d) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const start = formatDate(dateRange[0].startDate);
+const end = formatDate(dateRange[0].endDate);
+
+
+    const query = new URLSearchParams({
+      location: searchQuery || "",
+      start,
+      end
+    }).toString();
+
+    console.log("Home handleSearch → navigate with:", {
+  searchQuery,
+  start,
+  end,
+  url: `/excursions?${query}`,
+});
+navigate(`/excursions?${query}`);
+
+
+    navigate(`/excursions?${query}`);
+  };
+
   return (
     <main className="home">
       {/* Баннер */}
       <section className="banner">
         <h1>Необычные экскурсии от местных жителей</h1>
         <p>1 154 экскурсии в 401 городах по всему миру</p>
-        <form className="search-form">
+        
+                <form
+          className="search-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearch();
+          }}
+        >
           <div className="search-bar-banner">
                   <svg
                   className="search-icons"
@@ -89,10 +144,70 @@ const handleSubmit = async (e) => {
                   xmlns="http://www.w3.org/2000/svg">
                   <path d="M11.7321 10.3182H10.9907L10.7279 10.065C11.8541 8.7518 12.436 6.96032 12.1169 5.05624C11.6758 2.44869 9.4984 0.366386 6.87055 0.0474864C2.90061 -0.440264 -0.440517 2.89891 0.0475131 6.86652C0.366613 9.4928 2.45012 11.6689 5.05921 12.1098C6.9644 12.4287 8.757 11.8471 10.0709 10.7216L10.3243 10.9842V11.7252L14.313 15.7116C14.6978 16.0961 15.3266 16.0961 15.7114 15.7116C16.0962 15.327 16.0962 14.6986 15.7114 14.314L11.7321 10.3182ZM6.10096 10.3182C3.76405 10.3182 1.87763 8.4329 1.87763 6.09739C1.87763 3.76184 3.76405 1.87653 6.10096 1.87653C8.4379 1.87653 10.3243 3.76184 10.3243 6.09739C10.3243 8.4329 8.4379 10.3182 6.10096 10.3182Z" fill="#202020"/>
             </svg>
-            <input type="text" placeholder="Куда вы хотите поехать?" />
+          <input
+              type="text"
+              placeholder="Куда вы хотите поехать?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+              {searchQuery && (
+    <button
+      type="button"
+      className="clear-date-btn"
+      onClick={() => setSearchQuery("")}
+    >
+      ×
+    </button>
+  )}
           </div>
 
-          <input type="text" className="date-input" placeholder="Когда? (необязательно)" />
+          {/* Поле даты */}
+          <div className="date-input-wrapper">
+            <input
+              type="text"
+              className="date-input"
+              readOnly
+              value={
+                dateRange[0].startDate && dateRange[0].endDate
+                  ? `${dateRange[0].startDate.toLocaleDateString()} — ${dateRange[0].endDate.toLocaleDateString()}`
+                  : "Когда? (необязательно)"
+              }
+              onClick={() => setOpenCalendar((prev) => !prev)}
+            />
+
+              {/* Кнопка очистки дат */}
+  {dateRange[0].startDate && (
+    <button
+      type="button"
+      className="clear-date-btn"
+      onClick={(e) => {
+        e.stopPropagation(); // чтобы не открывался календарь
+        setDateRange([
+          {
+            startDate: null,
+            endDate: null,
+            key: "selection"
+          }
+        ]);
+      }}
+    >
+      ×
+    </button>
+  )}
+
+            {openCalendar && (
+              <div className="calendar-popup">
+                <DateRange
+                  locale={ru}
+                  editableDateInputs={true}
+                  onChange={(item) => setDateRange([item.selection])}
+                  moveRangeOnFirstSelection={false}
+                  ranges={dateRange}
+                />
+              </div>
+            )}
+          </div>
+
           <button type="submit">Найти</button>
         </form>
       </section>
@@ -102,12 +217,13 @@ const handleSubmit = async (e) => {
         <h2>Самые популярные направления</h2>
           <div className="card">
             {cities.map((city) => (
-              <a 
-              href={`/excursions/${city.slug}`}
-              className={`city-card ${city.slug === 'rome' ? 'hide-on-mobile' : ''}`}
-              key={city.slug}
-              style={{ backgroundImage: `url(${city.image})` }}
-              >
+<a 
+  href={`/excursions?location=${encodeURIComponent(city.name)}`}
+  className={`city-card ${city.slug === 'rome' ? 'hide-on-mobile' : ''}`}
+  key={city.slug}
+  style={{ backgroundImage: `url(${city.image})` }}
+>
+
                 <div className="card-overlay">
                 <h3>{city.name}</h3>
                 {/*<p>{city.count} экскурсий</p>*/}

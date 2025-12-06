@@ -11,6 +11,88 @@
   background: rgba(198, 228, 230, 0.8);
 }
 
+/* обёртка вокруг поля "Когда?" */
+.date-input-wrapper {
+  position: relative;     /* создаём точку привязки */
+}
+
+/* сам попап календаря */
+.calendar-popup {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  overflow: hidden; /* ключ */
+}
+
+/* чтоб сам баннер не создавал лишний стек и не резал содержимое */
+.banner,
+.banner--excursions,
+.search-form {
+  overflow: visible;      /* если вдруг было hidden */
+}
+
+/* Цвет заливки диапазона */
+.calendar-popup .rdrInRange,
+.calendar-popup .rdrStartEdge,
+.calendar-popup .rdrEndEdge {
+  background: #2fb65d !important; /* твой зелёный */
+}
+
+/* Цвет текста в выделенных датах */
+.calendar-popup .rdrDayNumber span {
+  color: #fff !important;
+}
+
+/* Фон обычных дней */
+.calendar-popup .rdrDay {
+  background: #ebebeb !important;
+}
+
+/* Цвет текста обычных дней */
+.calendar-popup .rdrDayNumber span {
+  color: #333 !important;
+}
+
+/* Общие стили для обеих кнопок */
+.calendar-popup .rdrNextPrevButton {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 32px;
+  height: 32px;
+  background: #2fb65d !important;
+  border-radius: 6px !important;
+}
+
+/* Стрелка внутри */
+.calendar-popup .rdrNextPrevButton i {
+  border: solid #fff !important;
+  border-width: 0 3px 3px 0 !important;
+  padding: 4px !important;
+  display: inline-block !important;
+}
+
+/* Левая стрелка (prev) */
+.calendar-popup .rdrPprevButton i {
+  transform: rotate(135deg) !important;
+}
+
+/* Правая стрелка (next) — корректируем смещение */
+.calendar-popup .rdrNextButton i {
+  transform: rotate(-45deg) !important;
+  position: relative;
+  left: -2px; /* сдвигаем чуть влево */
+  top: 0px;
+}
+
+.date-input {
+    color: #6d6d70;
+}
+
 .excursions-content {
   display: flex;
   gap: 30px;
@@ -277,7 +359,6 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-
 
 
 /*карточки экскурсий*/

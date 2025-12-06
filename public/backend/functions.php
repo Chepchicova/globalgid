@@ -129,6 +129,43 @@ function getExcursionsFiltered() {
 
     // Для отладки
     error_log("Принятые фильтры: " . print_r($input, true));
+    error_log('INPUT: ' . print_r($input, true));
+
+
+    //поиск
+    // ===================== ФИЛЬТР ПО ЛОКАЦИИ (ПОИСКОВИК) =====================
+$locationQuery = isset($input['locationQuery']) ? trim($input['locationQuery']) : null;
+$locationIds = [];
+
+if (!empty($locationQuery)) {
+    // Ищем по city или country
+    $sqlLoc = "
+        SELECT location_id 
+        FROM Locations 
+        WHERE city LIKE ? 
+           OR country LIKE ?
+    ";
+
+    $stmtLoc = $conn->prepare($sqlLoc);
+    $like = '%' . $locationQuery . '%';
+    $stmtLoc->execute([$like, $like]);
+    $foundLocations = $stmtLoc->fetchAll(PDO::FETCH_COLUMN);
+
+    if (!empty($foundLocations)) {
+        $locationIds = $foundLocations;
+    } else {
+        // Если ничего не найдено — возвращаем пустой список
+        echo json_encode([
+            'success' => true,
+            'data' => [],
+            'total' => 0,
+            'filters_received' => $input,
+            'note' => 'no locations matched searchQuery'
+        ], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+}
+
 
     $sql = "
         SELECT 
@@ -147,6 +184,29 @@ function getExcursionsFiltered() {
     ";
 
     $params = [];
+
+        // Фильтр по локации
+    if (!empty($locationIds)) {
+        $placeholders = implode(',', array_fill(0, count($locationIds), '?'));
+        $sql .= " AND e.location_id IN ($placeholders)";
+        $params = array_merge($params, $locationIds);
+    }
+
+// ===================== ФИЛЬТР ПО ДИАПАЗОНУ ДАТ =====================
+$start = $input['dateStart'] ?? null;
+$end = $input['dateEnd'] ?? null;
+
+if ($start && $end) {
+    // Делаем конец диапазона включительным
+    $endInclusive = date('Y-m-d', strtotime($end . ' +1 day'));
+
+    $sql .= " AND e.date_event >= ? AND e.date_event < ?";
+    $params[] = $start;
+    $params[] = $endInclusive;
+}
+
+
+
 
     // 1. Фильтр по типу
     if (!empty($input['types'])) {
@@ -260,21 +320,29 @@ if (isset($input['maxPrice']) && $input['maxPrice'] !== '') {
     }
 }
 
-    // 7. Фильтр "можно ли с детьми"
-    if (isset($input['withChildren']) && $input['withChildren'] !== null) {
-        $sql .= " AND e.children = ?";
-        $params[] = $input['withChildren'] ? 1 : 0;
-    }
+// 8. Фильтр "Можно с детьми"
+if (isset($input['withChildren']) && $input['withChildren'] == 1) {
+    // Показываем только экскурсии, где children = TRUE
+    $sql .= " AND e.children = 1";
+}
 
     // 8. Фильтр по длительности
-    if (!empty($input['minDuration']) && is_numeric($input['minDuration'])) {
+// 7. Фильтр по длительности
+if (isset($input['minDuration']) && $input['minDuration'] !== '') {
+    $minDuration = floatval($input['minDuration']);
+    if ($minDuration > 0) {
         $sql .= " AND e.duration >= ?";
-        $params[] = intval($input['minDuration']);
+        $params[] = $minDuration;
     }
-    if (!empty($input['maxDuration']) && is_numeric($input['maxDuration'])) {
+}
+
+if (isset($input['maxDuration']) && $input['maxDuration'] !== '') {
+    $maxDuration = floatval($input['maxDuration']);
+    if ($maxDuration > 0) {
         $sql .= " AND e.duration <= ?";
-        $params[] = intval($input['maxDuration']);
+        $params[] = $maxDuration;
     }
+}
 
     $sql .= " GROUP BY e.excursion_id ORDER BY e.date_event ASC";
 

@@ -1,7 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/header.css";
 
 export default function Header() {
+
+  const location = useLocation();
+  const isExcursionsPage = location.pathname === "/excursions";
+
+  const [headerSearch, setHeaderSearch] = useState("");
+  const navigate = useNavigate();
+
+  const handleHeaderSearch = () => {
+  const query = headerSearch.trim();
+
+  if (query === "") return;
+
+  navigate(`/excursions?location=${encodeURIComponent(query)}`);
+};
+
+
   return (
     <header className="header">
   <input type="checkbox" id="burger-checkbox" className="burger-checkbox" />
@@ -30,7 +47,8 @@ export default function Header() {
     </a>
   </div>
 
-    <div className="search-bar">
+{!isExcursionsPage && (
+   <div className="search-bar">
                 <svg
           className="search-icon"
           width="18"
@@ -40,8 +58,20 @@ export default function Header() {
           xmlns="http://www.w3.org/2000/svg">
           <path d="M11.7321 10.3182H10.9907L10.7279 10.065C11.8541 8.7518 12.436 6.96032 12.1169 5.05624C11.6758 2.44869 9.4984 0.366386 6.87055 0.0474864C2.90061 -0.440264 -0.440517 2.89891 0.0475131 6.86652C0.366613 9.4928 2.45012 11.6689 5.05921 12.1098C6.9644 12.4287 8.757 11.8471 10.0709 10.7216L10.3243 10.9842V11.7252L14.313 15.7116C14.6978 16.0961 15.3266 16.0961 15.7114 15.7116C16.0962 15.327 16.0962 14.6986 15.7114 14.314L11.7321 10.3182ZM6.10096 10.3182C3.76405 10.3182 1.87763 8.4329 1.87763 6.09739C1.87763 3.76184 3.76405 1.87653 6.10096 1.87653C8.4379 1.87653 10.3243 3.76184 10.3243 6.09739C10.3243 8.4329 8.4379 10.3182 6.10096 10.3182Z" fill="#202020"/>
         </svg>
-        <input type="text" placeholder="Куда вы хотите поехать?" />
+        <input
+  type="text"
+  placeholder="Куда вы хотите поехать?"
+  value={headerSearch}
+  onChange={(e) => setHeaderSearch(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      handleHeaderSearch();
+    }
+  }}
+/>
+
     </div>
+    )}
 
       <div className="nav-button">
   <nav className="nav">
