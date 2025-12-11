@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Home from "./pages/Home";
 import Excursions from "./pages/Excursions";
+import ExcursionDetail from "./pages/excursionDetail"; // ИМПОРТ ДЕТАЛЬНОЙ СТРАНИЦЫ
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
@@ -115,10 +116,12 @@ return (
             path="/profile" 
             element={
               <Profile 
-                onLogout={handleLogout} // ✅ Передаем функцию выхода
+                onLogout={handleLogout} // Передаем функцию выхода
               />
             } 
           />
+          {/* НОВЫЙ МАРШРУТ ДЛЯ ДЕТАЛЬНОЙ СТРАНИЦЫ ЭКСКУРСИИ */}
+          <Route path="/excursion/:id" element={<ExcursionDetail user={user} />} />
         </Routes>
       </main>
       <Footer />

@@ -158,7 +158,7 @@ export default function Profile({ onLogout }) {
                         <span className="pg-menu-label">Мои бронирования</span>
                     </button>
                     
-                    {/*<button 
+                    {/*<button настройки в профиле
                         className={`pg-menu-item ${activeTab === 'settings' ? 'pg-active' : ''}`}
                         onClick={() => setActiveTab('settings')}
                     >

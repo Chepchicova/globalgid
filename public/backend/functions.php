@@ -112,9 +112,8 @@ function getExcursionCards() {
         // обрезаем описание
         $ex['short_description'] = mb_substr($ex['description'], 0, 100) . "...";
 
-        // считаем старую цену (20–40% сверху) переделать
-        $percent = rand(20, 40);
-        $ex['old_price'] = round($ex['price'] * (1 + $percent / 100));
+        // считаем старую цену (фиксированные 20% сверху)
+        $ex['old_price'] = round($ex['price'] * 1.2);
     }
 
     echo json_encode($excursions, JSON_UNESCAPED_UNICODE);
